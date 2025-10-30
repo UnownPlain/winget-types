@@ -46,7 +46,7 @@ pub use installer_type::InstallerType;
 use itertools::Itertools;
 pub use market::{Market, MarketError, Markets, MarketsError};
 pub use minimum_os_version::{MinimumOSVersion, MinimumOSVersionError};
-use nested::installer_type::NestedInstallerType;
+pub use nested::installer_type::NestedInstallerType;
 pub use nested::{
     PortableCommandAlias, PortableCommandAliasError, installer_files::NestedInstallerFiles,
 };
@@ -64,16 +64,6 @@ use super::{
     LanguageTag, Manifest, ManifestType, ManifestVersion, PackageIdentifier, PackageVersion,
     Sha256String, url::DecodedUrl,
 };
-
-pub const VALID_FILE_EXTENSIONS: [&str; 7] = [
-    "msix",
-    "msi",
-    "appx",
-    "exe",
-    "zip",
-    "msixbundle",
-    "appxbundle",
-];
 
 #[cfg(feature = "chrono")]
 type Date = chrono::NaiveDate;
@@ -154,6 +144,7 @@ pub struct InstallerManifest {
     /// known formats ([Inno], [Nullsoft], [WiX], and [Burn]) provide standard sets of installer
     /// switches to provide different installer experiences. Portable packages are supported as of
     /// Windows Package Manager 1.3. Zip packages are supported as of Windows Package Manager 1.5.
+    /// Fonts are supported as of Windows Package Manager 1.12.
     ///
     /// [MSIX]: https://docs.microsoft.com/windows/msix/overview
     /// [MSI]: https://docs.microsoft.com/windows/win32/msi/windows-installer-portal
@@ -456,7 +447,7 @@ pub struct InstallerManifest {
 
     /// The manifest syntax version.
     ///
-    /// Must have the value `1.10.0`. The Microsoft community package repository validation
+    /// Must have the value `1.12.0`. The Microsoft community package repository validation
     /// pipelines also use this value to determine appropriate validation rules when evaluating this
     /// file.
     #[cfg_attr(feature = "serde", serde(default))]
@@ -464,7 +455,7 @@ pub struct InstallerManifest {
 }
 
 impl Manifest for InstallerManifest {
-    const SCHEMA: &'static str = "https://aka.ms/winget-manifest.installer.1.10.0.schema.json";
+    const SCHEMA: &'static str = "https://aka.ms/winget-manifest.installer.1.12.0.schema.json";
     const TYPE: ManifestType = ManifestType::Installer;
 }
 

@@ -2,7 +2,7 @@ use core::{fmt, str::FromStr};
 
 use thiserror::Error;
 
-use super::VALID_FILE_EXTENSIONS;
+use crate::utils::ValidFileExtensions;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -100,7 +100,7 @@ impl Architecture {
         }
 
         // If the architecture has not been found, check for {architecture}.{extension}
-        for extension in VALID_FILE_EXTENSIONS {
+        for extension in ValidFileExtensions::ALL {
             for (arch_name, arch) in ARCHITECTURES {
                 if url
                     .rfind(extension)
