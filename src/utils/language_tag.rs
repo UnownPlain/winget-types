@@ -15,6 +15,24 @@ impl LanguageTag {
     pub const fn new(language: LanguageIdentifier) -> Self {
         Self(language)
     }
+
+    #[must_use]
+    #[inline]
+    pub fn language(&self) -> icu_locale::subtags::Language {
+        self.0.language
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn script(&self) -> Option<icu_locale::subtags::Script> {
+        self.0.script
+    }
+
+    #[must_use]
+    #[inline]
+    pub fn region(&self) -> Option<icu_locale::subtags::Region> {
+        self.0.region
+    }
 }
 
 impl Default for LanguageTag {
