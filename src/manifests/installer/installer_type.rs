@@ -5,7 +5,7 @@ use thiserror::Error;
 use super::nested::installer_type::NestedInstallerType;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 #[non_exhaustive]
 pub enum InstallerType {
@@ -19,6 +19,9 @@ pub enum InstallerType {
     Burn,
     Pwa,
     Zip,
+    AdvancedInstaller,
+    Squirrel,
+    Velopack,
     Portable,
     Font,
 }
@@ -37,9 +40,28 @@ impl InstallerType {
             Self::Burn => "burn",
             Self::Pwa => "pwa",
             Self::Zip => "zip",
+            Self::AdvancedInstaller | Self::Squirrel | Self::Velopack => "exe",
             Self::Portable => "portable",
             Self::Font => "font",
         }
+    }
+
+    #[must_use]
+    pub const fn installer_technology(self) -> Option<&'static str> {
+        match self {
+            Self::AdvancedInstaller => Some("Advanced Installer"),
+            Self::Squirrel => Some("Squirrel"),
+            Self::Velopack => Some("Velopack"),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn is_exe(self) -> bool {
+        matches!(
+            self,
+            Self::Exe | Self::AdvancedInstaller | Self::Squirrel | Self::Velopack
+        )
     }
 }
 
@@ -63,10 +85,31 @@ impl TryFrom<InstallerType> for NestedInstallerType {
             InstallerType::Nullsoft => Ok(Self::Nullsoft),
             InstallerType::Wix => Ok(Self::Wix),
             InstallerType::Burn => Ok(Self::Burn),
+            InstallerType::AdvancedInstaller => Ok(Self::AdvancedInstaller),
+            InstallerType::Squirrel => Ok(Self::Squirrel),
+            InstallerType::Velopack => Ok(Self::Velopack),
             InstallerType::Portable => Ok(Self::Portable),
             InstallerType::Font => Ok(Self::Font),
             InstallerType::Zip | InstallerType::Pwa => Err(()),
         }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for InstallerType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[cfg(feature = "serde-saphyr")]
+        if let Some(comment) = self.installer_technology() {
+            return serde::Serialize::serialize(
+                &serde_saphyr::Commented(self.as_str(), comment.to_owned()),
+                serializer,
+            );
+        }
+
+        serializer.serialize_str(self.as_str())
     }
 }
 
@@ -95,9 +138,33 @@ impl FromStr for InstallerType {
             "wix" => Ok(Self::Wix),
             "burn" => Ok(Self::Burn),
             "pwa" => Ok(Self::Pwa),
+            "advancedinstaller" | "advanced-installer" => Ok(Self::AdvancedInstaller),
+            "squirrel" => Ok(Self::Squirrel),
+            "velopack" => Ok(Self::Velopack),
             "portable" => Ok(Self::Portable),
             "font" => Ok(Self::Font),
             _ => Err(InstallerTypeParseError),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::InstallerType;
+
+    #[test]
+    fn specialized_exe_types_have_schema_value() {
+        assert_eq!(InstallerType::AdvancedInstaller.as_str(), "exe");
+        assert_eq!(InstallerType::Squirrel.as_str(), "exe");
+        assert_eq!(InstallerType::Velopack.as_str(), "exe");
+    }
+
+    #[cfg(feature = "serde-saphyr")]
+    #[test]
+    fn specialized_exe_types_serialize_as_commented_exe() {
+        assert_eq!(
+            serde_saphyr::to_string(&InstallerType::Velopack).unwrap(),
+            "exe # Velopack\n"
+        );
     }
 }
