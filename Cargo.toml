@@ -23,6 +23,7 @@ jiff = { version = "0.2", default-features = false, optional = true }
 package-family-name = { version = "3", default-features = false }
 percent-encoding = { version = "2", default-features = false }
 serde = { version = "1", default-features = false, features = ["alloc", "derive"], optional = true }
+serde-saphyr = { version = "1.0.0-rc.1", default-features = false, features = ["serialize"], optional = true }
 sha2 = { version = "0.11", default-features = false }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 thiserror = { version = "2", default-features = false }
@@ -44,6 +45,7 @@ serde = [
     "time?/serde-human-readable",
     "url/serde"
 ]
+serde-saphyr = ["serde", "dep:serde-saphyr"]
 std = [
     "dep:camino",
     "bitflags/std",
