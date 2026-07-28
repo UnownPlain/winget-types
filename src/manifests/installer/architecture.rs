@@ -20,7 +20,9 @@ pub enum Architecture {
 #[error("Failed to parse as valid Architecture")]
 pub struct ParseArchitectureError;
 
-const DELIMITERS: [u8; 8] = [b',', b'/', b'\\', b'.', b'_', b'-', b'(', b')'];
+const DELIMITERS: [u8; 11] = [
+    b',', b'/', b'\\', b'.', b'_', b'-', b'(', b')', b'?', b'&', b'=',
+];
 
 const ARCHITECTURES: [(&str, Architecture); 32] = [
     ("x86-64", Architecture::X64),
@@ -61,12 +63,14 @@ impl Architecture {
     #[must_use]
     pub fn from_url(url: &str) -> Option<Self> {
         fn is_delimited_at(url_bytes: &[u8], start: usize, len: usize) -> bool {
-            url_bytes
-                .get(start - 1)
-                .is_some_and(|delimiter| DELIMITERS.contains(delimiter))
-                && url_bytes
-                    .get(start + len)
-                    .is_some_and(|delimiter| DELIMITERS.contains(delimiter))
+            (start == 0
+                || url_bytes
+                    .get(start - 1)
+                    .is_some_and(|delimiter| DELIMITERS.contains(delimiter)))
+                && (start + len == url_bytes.len()
+                    || url_bytes
+                        .get(start + len)
+                        .is_some_and(|delimiter| DELIMITERS.contains(delimiter)))
         }
 
         // Ignore the casing of the URL
@@ -397,6 +401,21 @@ mod tests {
                 "https://github.com/vim/vim-win32-installer/releases/download/v9.1.1234/gvim_9.1.1234_arm64.exe"
             ),
             Some(Architecture::Arm64)
+        );
+    }
+
+    #[rstest]
+    #[case("x86", Architecture::X86)]
+    #[case("amd64", Architecture::X64)]
+    fn architecture_query_parameter_wins_over_version_number(
+        #[case] architecture: &str,
+        #[case] expected: Architecture,
+    ) {
+        assert_eq!(
+            Architecture::from_url(&format!(
+                "https://definitionupdates.microsoft.com/packages/content/msert.exe?packageType=Scanner&packageVersion=1.455.386.0&arch={architecture}"
+            )),
+            Some(expected)
         );
     }
 }
