@@ -24,13 +24,14 @@ const DELIMITERS: [u8; 11] = [
     b',', b'/', b'\\', b'.', b'_', b'-', b'(', b')', b'?', b'&', b'=',
 ];
 
-const ARCHITECTURES: [(&str, Architecture); 32] = [
+const ARCHITECTURES: [(&str, Architecture); 33] = [
     ("x86-64", Architecture::X64),
     ("x86_64", Architecture::X64),
     ("x64", Architecture::X64),
     ("64-bit", Architecture::X64),
     ("64bit", Architecture::X64),
     ("win64a", Architecture::Arm64),
+    ("winarm64", Architecture::Arm64),
     ("win64", Architecture::X64),
     ("winx64", Architecture::X64),
     ("ia64", Architecture::X64),
