@@ -4,6 +4,8 @@ use core::fmt;
 use bon::Builder;
 use compact_str::CompactString;
 
+#[cfg(feature = "std")]
+use crate::utils::name_normalization::normalize_name;
 use crate::{Manifest, Version, installer::InstallerType, locale::DefaultLocaleManifest};
 
 #[derive(Builder, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -95,12 +97,26 @@ impl AppsAndFeaturesEntry {
 
     /// Removes values that are equivalent to their respective value in the default locale manifest.
     ///
+    /// With the `std` feature enabled, display names are compared using winget-cli's name
+    /// normalization algorithm. Without `std`, display names are compared exactly.
+    ///
     /// `AppsAndFeaturesEntry` field -> default locale field:
     /// - Display name -> Package name
     /// - Publisher -> Publisher
     /// - Display version -> Package version
     pub fn deduplicate(&mut self, default_locale_manifest: &DefaultLocaleManifest) {
-        if self.display_name.as_deref() == Some(default_locale_manifest.package_name.as_str()) {
+        if self.display_name.as_deref().is_some_and(|display_name| {
+            #[cfg(feature = "std")]
+            {
+                display_name == default_locale_manifest.package_name.as_str()
+                    || normalize_name(display_name)
+                        == normalize_name(default_locale_manifest.package_name.as_str())
+            }
+            #[cfg(not(feature = "std"))]
+            {
+                display_name == default_locale_manifest.package_name.as_str()
+            }
+        }) {
             self.display_name = None;
         }
 
@@ -136,5 +152,44 @@ impl fmt::Debug for AppsAndFeaturesEntry {
 impl Default for AppsAndFeaturesEntry {
     fn default() -> Self {
         Self::builder().build()
+    }
+}
+
+#[cfg(all(test, feature = "std"))]
+mod tests {
+    use crate::locale::PackageName;
+
+    use super::*;
+
+    #[test]
+    fn deduplicate_removes_normalized_display_name_match() {
+        let default_locale_manifest = DefaultLocaleManifest {
+            package_name: PackageName::new("Example Product").unwrap(),
+            ..Default::default()
+        };
+        let mut entry = AppsAndFeaturesEntry::builder()
+            .display_name("Example Product version 2.1.7")
+            .product_code("{PRODUCT-CODE}")
+            .build();
+
+        entry.deduplicate(&default_locale_manifest);
+
+        assert_eq!(entry.display_name(), None);
+        assert_eq!(entry.product_code(), Some("{PRODUCT-CODE}"));
+    }
+
+    #[test]
+    fn deduplicate_preserves_distinct_display_name() {
+        let default_locale_manifest = DefaultLocaleManifest {
+            package_name: PackageName::new("Example Product").unwrap(),
+            ..Default::default()
+        };
+        let mut entry = AppsAndFeaturesEntry::builder()
+            .display_name("Different Product")
+            .build();
+
+        entry.deduplicate(&default_locale_manifest);
+
+        assert_eq!(entry.display_name(), Some("Different Product"));
     }
 }

@@ -17,11 +17,14 @@ camino = { version = "1", default-features = false, optional = true }
 chrono = { version = "0.4", default-features = false, optional = true }
 compact_str = { version = "0.10", default-features = false }
 heapless = { version = "0.9", default-features = false }
+icu_casemap = { version = "2", default-features = false, features = ["compiled_data"], optional = true }
 icu_locale = { version = "2", default-features = false }
+icu_normalizer = { version = "2", default-features = false, features = ["compiled_data"], optional = true }
 itertools = { version = "0.15", default-features = false }
 jiff = { version = "0.2", default-features = false, optional = true }
 package-family-name = { version = "3", default-features = false }
 percent-encoding = { version = "2", default-features = false }
+regex = { version = "1", default-features = false, features = ["unicode"], optional = true }
 serde = { version = "1", default-features = false, features = ["alloc", "derive"], optional = true }
 serde-saphyr = { version = "1.0.0-rc.1", default-features = false, features = ["serialize"], optional = true }
 sha2 = { version = "0.11", default-features = false }
@@ -48,6 +51,9 @@ serde = [
 serde-saphyr = ["serde", "dep:serde-saphyr"]
 std = [
     "dep:camino",
+    "dep:icu_casemap",
+    "dep:icu_normalizer",
+    "dep:regex",
     "bitflags/std",
     "chrono?/std",
     "compact_str/std",
