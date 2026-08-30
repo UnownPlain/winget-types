@@ -7,7 +7,7 @@ use sha2::{Sha256, digest::Output};
 const SHA256_LEN: usize = 256 / 0xF_u8.count_ones() as usize;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Sha256String(String<SHA256_LEN>);
 
 impl Sha256String {
@@ -102,8 +102,37 @@ impl Default for Sha256String {
     }
 }
 
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Sha256String {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let mut hash = <String<SHA256_LEN> as serde::Deserialize>::deserialize(deserializer)?;
+        hash.make_ascii_uppercase();
+        Ok(Self(hash))
+    }
+}
+
 impl fmt::Display for Sha256String {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+#[cfg(all(test, feature = "serde"))]
+mod tests {
+    use super::Sha256String;
+
+    #[test]
+    fn deserialization_normalizes_to_uppercase() {
+        const LOWERCASE: &str = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+
+        let hash = serde_yaml::from_str::<Sha256String>(LOWERCASE).unwrap();
+
+        assert_eq!(
+            hash.as_str(),
+            "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD"
+        );
     }
 }
