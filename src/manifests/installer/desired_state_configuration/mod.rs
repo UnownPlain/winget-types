@@ -105,6 +105,47 @@ mod tests {
     }
 
     #[test]
+    fn inherit_merge_and_optimize_preserve_dsc() {
+        let dsc: DesiredStateConfiguration = serde_yaml::from_str(DSC).unwrap();
+        let mut manifest = InstallerManifest {
+            desired_state_configuration: Some(dsc.clone()),
+            ..InstallerManifest::default()
+        };
+        let inherited = Installer::default().inherit_from(&manifest);
+        assert_eq!(inherited.desired_state_configuration, Some(dsc.clone()));
+        assert_eq!(
+            Installer::default().merge_with(inherited.clone()),
+            inherited
+        );
+
+        let override_installer = Installer {
+            desired_state_configuration: Some(DesiredStateConfiguration::default()),
+            ..Installer::default()
+        };
+        assert_eq!(
+            override_installer.clone().inherit_from(&manifest),
+            override_installer
+        );
+        assert_eq!(
+            override_installer.clone().merge_with(inherited.clone()),
+            override_installer
+        );
+
+        manifest.installers = vec![inherited];
+        manifest.optimize();
+        assert_eq!(manifest.desired_state_configuration, Some(dsc));
+        assert!(manifest.installers[0].desired_state_configuration.is_none());
+
+        let mut different = InstallerManifest {
+            installers: vec![override_installer, Installer::default()],
+            ..InstallerManifest::default()
+        };
+        different.optimize();
+        assert!(different.desired_state_configuration.is_none());
+        assert_eq!(different.installers.len(), 2);
+    }
+
+    #[test]
     fn manifest_versions_and_schemas_match() {
         fn check<M: Manifest + Default>() {
             assert_eq!(
