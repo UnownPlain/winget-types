@@ -12,7 +12,10 @@ use crate::{Path, PathBuf, Sha256String};
 #[cfg_attr(feature = "serde", serde(rename_all = "PascalCase"))]
 pub struct InstalledFile {
     /// The path to the installed file relative to the default install location.
-    #[cfg_attr(feature = "serde", serde(rename = "RelativeFilePath"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "RelativeFilePath", serialize_with = "crate::path_serde::serialize")
+    )]
     file_path: PathBuf,
 
     /// The Sha256 hash of the installed file.
