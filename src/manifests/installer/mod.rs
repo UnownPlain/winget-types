@@ -1364,7 +1364,7 @@ mod tests {
             RequireExplicitUpgrade: true
             DisplayInstallWarnings: true
             UnsupportedOSArchitectures: [x86]
-            UnsupportedArguments: [Log]
+            UnsupportedArguments: [log]
             AppsAndFeaturesEntries:
             - DisplayName: Test Application
             ElevationRequirement: elevatesSelf
