@@ -28,6 +28,7 @@ mod unsupported_os_architectures;
 mod upgrade_behavior;
 
 use alloc::{collections::BTreeSet, string::String, vec::Vec};
+use core::cmp::Ordering;
 
 pub use apps_and_features_entries::{AppsAndFeaturesEntries, AppsAndFeaturesEntry};
 pub use architecture::{Architecture, ParseArchitectureError};
@@ -611,7 +612,7 @@ impl InstallerManifest {
     }
 }
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "PascalCase"))]
 pub struct Installer {
@@ -1153,14 +1154,143 @@ impl Installer {
     }
 }
 
+impl PartialOrd for Installer {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Installer {
+    fn cmp(&self, other: &Self) -> Ordering {
+        macro_rules! compare_keys {
+            ($($field:ident),* $(,)?) => {{
+                // Require new fields to be included so ordering stays consistent with equality.
+                let Self { $($field: _),* } = self;
+
+                Ordering::Equal$(.then_with(|| self.$field.cmp(&other.$field)))*
+            }};
+        }
+
+        // Keep sorting independent of the field order used for serialization.
+        compare_keys!(
+            locale,
+            architecture,
+            r#type,
+            platform,
+            minimum_os_version,
+            nested_installer_type,
+            nested_installer_files,
+            scope,
+            url,
+            sha_256,
+            signature_sha_256,
+            install_modes,
+            switches,
+            success_codes,
+            expected_return_codes,
+            upgrade_behavior,
+            commands,
+            protocols,
+            file_extensions,
+            dependencies,
+            package_family_name,
+            product_code,
+            capabilities,
+            restricted_capabilities,
+            markets,
+            aborts_terminal,
+            release_date,
+            install_location_required,
+            require_explicit_upgrade,
+            display_install_warnings,
+            unsupported_os_architectures,
+            unsupported_arguments,
+            apps_and_features_entries,
+            elevation_requirement,
+            installation_metadata,
+            download_command_prohibited,
+            repair_behavior,
+            archive_binaries_depend_on_path,
+            authentication,
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use alloc::vec;
 
     use crate::{
         LanguageTag,
-        installer::{Architecture, Installer, InstallerManifest, Switches},
+        installer::{
+            Architecture, Installer, InstallerManifest, InstallerType, MinimumOSVersion, Platform,
+            Switches,
+        },
     };
+
+    #[rstest::rstest]
+    #[case(Platform::WINDOWS_DESKTOP, None)]
+    #[case(Platform::empty(), Some("10.0.19041.0".parse().unwrap()))]
+    #[case(Platform::WINDOWS_DESKTOP, Some("10.0.19041.0".parse().unwrap()))]
+    fn sort_installers_by_architecture_and_type(
+        #[case] platform: Platform,
+        #[case] minimum_os_version: Option<MinimumOSVersion>,
+    ) {
+        let msix = Installer {
+            architecture: Architecture::X64,
+            r#type: Some(InstallerType::Msix),
+            platform,
+            minimum_os_version,
+            ..Installer::default()
+        };
+        let zip = Installer {
+            architecture: Architecture::X64,
+            r#type: Some(InstallerType::Zip),
+            ..Installer::default()
+        };
+        let arm64_msix = Installer {
+            architecture: Architecture::Arm64,
+            ..msix.clone()
+        };
+        let arm64_zip = Installer {
+            architecture: Architecture::Arm64,
+            ..zip.clone()
+        };
+        let mut installers = vec![
+            arm64_zip.clone(),
+            zip.clone(),
+            arm64_msix.clone(),
+            msix.clone(),
+        ];
+        installers.sort_unstable();
+        assert_eq!(installers, vec![msix, zip, arm64_msix, arm64_zip]);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serialize_installer_field_order() {
+        let installer = Installer {
+            locale: Some("en-US".parse().unwrap()),
+            platform: Platform::WINDOWS_DESKTOP,
+            minimum_os_version: Some("10.0.19041.0".parse().unwrap()),
+            architecture: Architecture::X64,
+            r#type: Some(InstallerType::Msix),
+            ..Installer::default()
+        };
+        let expected = indoc::indoc! {"
+            InstallerLocale: en-US
+            Platform:
+            - Windows.Desktop
+            MinimumOSVersion: 10.0.19041.0
+            Architecture: x64
+            InstallerType: msix
+        "};
+        assert!(
+            serde_yaml::to_string(&installer)
+                .unwrap()
+                .starts_with(expected)
+        );
+    }
 
     #[test]
     fn inherit_all_manifest_properties() {
