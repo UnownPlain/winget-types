@@ -31,6 +31,7 @@ sha2 = { version = "0.11", default-features = false }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 thiserror = { version = "2", default-features = false }
 time = { version = "0.3", default-features = false, optional = true }
+typed-path = { version = "0.12.3", default-features = false, optional = true }
 url = { version = "2.5.4", default-features = false } # std feature was added in 2.5.3
 
 [features]
@@ -46,6 +47,7 @@ serde = [
     "jiff?/serde",
     "package-family-name/serde",
     "time?/serde-human-readable",
+    "typed-path?/serde",
     "url/serde"
 ]
 serde-saphyr = ["serde", "dep:serde-saphyr"]
@@ -62,6 +64,7 @@ std = [
     "percent-encoding/std",
     "serde?/std",
     "thiserror/std",
+    "dep:typed-path",
     "time?/std",
     "url/std"
 ]
@@ -72,3 +75,6 @@ indoc = "2"
 rstest = "0.27"
 rustc-hash = { version = "2", default-features = false }
 serde_yaml = { package = "yaml_serde", version = "0.10" }
+
+[patch.crates-io]
+typed-path = { git = "https://github.com/chipsenkbeil/typed-path.git", branch = "main" }
