@@ -7,6 +7,7 @@ mod capability;
 mod channel;
 mod command;
 mod dependencies;
+pub mod desired_state_configuration;
 mod elevation_requirement;
 mod expected_return_code;
 mod file_extension;
@@ -37,6 +38,7 @@ pub use capability::{Capability, CapabilityError, RestrictedCapability};
 pub use channel::{Channel, ChannelError};
 pub use command::{Command, CommandError};
 pub use dependencies::{Dependencies, PackageDependency};
+pub use desired_state_configuration::DesiredStateConfiguration;
 pub use elevation_requirement::ElevationRequirement;
 pub use expected_return_code::ExpectedReturnCode;
 pub use file_extension::{FileExtension, FileExtensionError};
@@ -438,6 +440,10 @@ pub struct InstallerManifest {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub authentication: Option<Authentication>,
 
+    /// DSC resources related to the package.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub desired_state_configuration: Option<DesiredStateConfiguration>,
+
     pub installers: Vec<Installer>,
 
     /// The manifest type.
@@ -452,7 +458,7 @@ pub struct InstallerManifest {
 
     /// The manifest syntax version.
     ///
-    /// Must have the value `1.12.0`. The Microsoft community package repository validation
+    /// Must have the value `1.28.0`. The Microsoft community package repository validation
     /// pipelines also use this value to determine appropriate validation rules when evaluating this
     /// file.
     #[cfg_attr(feature = "serde", serde(default))]
@@ -500,6 +506,7 @@ impl Default for InstallerManifest {
             repair_behavior: None,
             archive_binaries_depend_on_path: false,
             authentication: None,
+            desired_state_configuration: None,
             installers: Vec::default(),
             manifest_type: ManifestType::Installer,
             manifest_version: ManifestVersion::default(),
@@ -508,7 +515,7 @@ impl Default for InstallerManifest {
 }
 
 impl Manifest for InstallerManifest {
-    const SCHEMA: &'static str = "https://aka.ms/winget-manifest.installer.1.12.0.schema.json";
+    const SCHEMA: &'static str = "https://aka.ms/winget-manifest.installer.1.28.0.schema.json";
 
     const TYPE: ManifestType = ManifestType::Installer;
 
@@ -603,6 +610,7 @@ impl InstallerManifest {
             repair_behavior,
             archive_binaries_depend_on_path,
             authentication,
+            desired_state_configuration,
         );
 
         self.manifest_version = ManifestVersion::default();
@@ -963,6 +971,10 @@ pub struct Installer {
     /// or install the package.
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub authentication: Option<Authentication>,
+
+    /// DSC resources related to the package.
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub desired_state_configuration: Option<DesiredStateConfiguration>,
 }
 
 impl Installer {
@@ -1043,6 +1055,7 @@ impl Installer {
             repair_behavior,
             archive_binaries_depend_on_path,
             authentication,
+            desired_state_configuration,
             [
                 silent,
                 silent_with_progress,
@@ -1138,6 +1151,7 @@ impl Installer {
             repair_behavior,
             archive_binaries_depend_on_path,
             authentication,
+            desired_state_configuration,
             [
                 silent,
                 silent_with_progress,
@@ -1212,6 +1226,7 @@ impl Ord for Installer {
             repair_behavior,
             archive_binaries_depend_on_path,
             authentication,
+            desired_state_configuration,
         )
     }
 }
