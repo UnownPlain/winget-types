@@ -5,7 +5,7 @@ use bon::Builder;
 use compact_str::CompactString;
 
 #[cfg(feature = "std")]
-use crate::utils::name_normalization::normalize_name;
+use crate::utils::name_normalization::{normalize_name, normalize_publisher};
 use crate::{Manifest, Version, installer::InstallerType, locale::DefaultLocaleManifest};
 
 #[derive(Builder, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -97,8 +97,8 @@ impl AppsAndFeaturesEntry {
 
     /// Removes values that are equivalent to their respective value in the default locale manifest.
     ///
-    /// With the `std` feature enabled, display names are compared using winget-cli's name
-    /// normalization algorithm. Without `std`, display names are compared exactly.
+    /// With the `std` feature enabled, display names and publishers are compared using
+    /// winget-cli's respective normalization algorithms. Without `std`, they are compared exactly.
     ///
     /// `AppsAndFeaturesEntry` field -> default locale field:
     /// - Display name -> Package name
@@ -120,7 +120,18 @@ impl AppsAndFeaturesEntry {
             self.display_name = None;
         }
 
-        if self.publisher.as_deref() == Some(default_locale_manifest.publisher.as_str()) {
+        if self.publisher.as_deref().is_some_and(|publisher| {
+            #[cfg(feature = "std")]
+            {
+                publisher == default_locale_manifest.publisher.as_str()
+                    || normalize_publisher(publisher)
+                        == normalize_publisher(default_locale_manifest.publisher.as_str())
+            }
+            #[cfg(not(feature = "std"))]
+            {
+                publisher == default_locale_manifest.publisher.as_str()
+            }
+        }) {
             self.publisher = None;
         }
 
@@ -157,9 +168,38 @@ impl Default for AppsAndFeaturesEntry {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use crate::locale::PackageName;
-
     use super::*;
+    use crate::locale::{PackageName, Publisher};
+
+    #[rstest::rstest]
+    #[case("dataflare", "Dataflare", true)]
+    #[case("Example LLC Tools", "Example", true)]
+    #[case("Other Publisher", "Example", false)]
+    #[case("Example Tools", "Example", false)]
+    fn deduplicate_compares_normalized_publishers(
+        #[case] arp_publisher: &str,
+        #[case] locale_publisher: &str,
+        #[case] equivalent: bool,
+    ) {
+        let default_locale_manifest = DefaultLocaleManifest {
+            publisher: Publisher::new(locale_publisher).unwrap(),
+            ..Default::default()
+        };
+        let mut entry = AppsAndFeaturesEntry::builder()
+            .publisher(arp_publisher)
+            .product_code("{PRODUCT-CODE}")
+            .build();
+        entry.deduplicate(&default_locale_manifest);
+        assert_eq!(
+            entry.publisher(),
+            if equivalent {
+                None
+            } else {
+                Some(arp_publisher)
+            }
+        );
+        assert_eq!(entry.product_code(), Some("{PRODUCT-CODE}"));
+    }
 
     #[test]
     fn deduplicate_removes_normalized_display_name_match() {
