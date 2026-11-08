@@ -49,9 +49,9 @@ pub use installer_type::InstallerType;
 use itertools::Itertools;
 pub use market::{Market, MarketError, Markets, MarketsError};
 pub use minimum_os_version::{MinimumOSVersion, MinimumOSVersionError};
-use nested::installer_type::NestedInstallerType;
 pub use nested::{
     PortableCommandAlias, PortableCommandAliasError, installer_files::NestedInstallerFiles,
+    installer_type::NestedInstallerType,
 };
 pub use package_family_name::PackageFamilyName;
 pub use platform::{Platform, PlatformParseError};
@@ -69,7 +69,7 @@ use crate::{
     Sha256String, url::DecodedUrl,
 };
 
-pub const VALID_FILE_EXTENSIONS: [&str; 7] = [
+const VALID_FILE_EXTENSIONS: [&str; 12] = [
     "msix",
     "msi",
     "appx",
@@ -77,6 +77,11 @@ pub const VALID_FILE_EXTENSIONS: [&str; 7] = [
     "zip",
     "msixbundle",
     "appxbundle",
+    "otf",
+    "ttf",
+    "fnt",
+    "ttc",
+    "otc",
 ];
 
 #[cfg(feature = "chrono")]
@@ -162,6 +167,7 @@ pub struct InstallerManifest {
     /// known formats ([Inno], [Nullsoft], [WiX], and [Burn]) provide standard sets of installer
     /// switches to provide different installer experiences. Portable packages are supported as of
     /// Windows Package Manager 1.3. Zip packages are supported as of Windows Package Manager 1.5.
+    /// Fonts are supported as of Windows Package Manager 1.12.
     ///
     /// [MSIX]: https://docs.microsoft.com/windows/msix/overview
     /// [MSI]: https://docs.microsoft.com/windows/win32/msi/windows-installer-portal
