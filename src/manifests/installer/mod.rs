@@ -993,6 +993,16 @@ pub struct Installer {
 }
 
 impl Installer {
+    /// Returns the nested installer type for a ZIP, or the installer type for any other installer.
+    #[must_use]
+    pub fn effective_installer_type(&self) -> Option<InstallerType> {
+        if self.r#type == Some(InstallerType::Zip) {
+            self.nested_installer_type.map(InstallerType::from)
+        } else {
+            self.r#type
+        }
+    }
+
     pub fn scope(&self, installer_manifest: &InstallerManifest) -> Option<Scope> {
         self.scope.or(installer_manifest.scope)
     }
