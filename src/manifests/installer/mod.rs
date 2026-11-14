@@ -188,7 +188,11 @@ pub struct InstallerManifest {
     /// A list of all the installers to be executed within an archive.
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "BTreeSet::is_empty", default)
+        serde(
+            skip_serializing_if = "BTreeSet::is_empty",
+            default,
+            serialize_with = "crate::path_serde::serialize_nested_files"
+        )
     )]
     pub nested_installer_files: BTreeSet<NestedInstallerFiles>,
 
@@ -701,7 +705,11 @@ pub struct Installer {
     /// A list of all the installers to be executed within an archive.
     #[cfg_attr(
         feature = "serde",
-        serde(skip_serializing_if = "BTreeSet::is_empty", default)
+        serde(
+            skip_serializing_if = "BTreeSet::is_empty",
+            default,
+            serialize_with = "crate::path_serde::serialize_nested_files"
+        )
     )]
     pub nested_installer_files: BTreeSet<NestedInstallerFiles>,
 
